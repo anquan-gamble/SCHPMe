@@ -3,7 +3,7 @@
 //  iOSTest
 //
 //  Created by FMU on 3/18/20.
-//  Copyright © 2020 Garriss Moseley. All rights reserved.
+//  Copyright © 2020 Anquan Gamble. All rights reserved.
 //
 
 import Foundation
