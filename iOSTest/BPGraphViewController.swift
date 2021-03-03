@@ -17,80 +17,211 @@
 import Foundation
 import UIKit
 import Charts
+import SQLite3
+import FMDB
 
-class BPChartsViewController: UIViewController {
+protocol BPDataDelegate {
+    func getBPData()
     
-    
-    @IBOutlet weak var BPChartView: LineChartView!
-    @IBOutlet weak var sysTextBox: UITextField!
-    @IBOutlet weak var diaTextBox: UITextField!
-    
-     var systolic: [Double] = []
-     var diastolic: [Double] = []
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        // Do any additional setup after loading the view
-    
-    }
-    
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-    }
-    
-    @IBAction func sysButton(_ sender: Any) {
-        let sysInput = Double(sysTextBox.text!)
-        systolic.append(sysInput!)
-        updateGraph()
-    }
-    
-    @IBAction func diaButton(_ sender: Any) {
-        let diaInput = Double(diaTextBox.text!)
-        diastolic.append(diaInput!)
-        updateGraph()
-    }
-    
+}
 
-    func updateGraph() {
-        let bpData = LineChartData()
-        var bpSystolic = [ChartDataEntry]()
-        
-        for i in 0..<systolic.count {
-            bpSystolic.append(ChartDataEntry(x: Double(i), y: Double(systolic[i])))
+
+class BPChartsViewController: UIViewController, BPDataDelegate {
+    func getBPData() {
+        getAllData()
     }
-        
-        let sysLine = LineChartDataSet(entries: bpSystolic, label: "Systolic")
-        sysLine.colors = [NSUIColor.init(red: 255.0/255.0, green: 192.0/255.0, blue: 203.0/255.0, alpha: 1.0)]
-        sysLine.lineWidth = 3
-        sysLine.highlightColor = .red
-        sysLine.circleColors = [NSUIColor.init(red: 255.0/255.0, green: 192.0/255.0, blue: 203.0/255.0, alpha: 1.0)]
-        
-        bpData.addDataSet(sysLine)
-        
-        if (diastolic.count > 0) {
-            var bpDiastolic = [ChartDataEntry]()
-            for i in 0..<diastolic.count {
-                bpDiastolic.append(ChartDataEntry(x: Double(i), y: Double(diastolic[i]) ))
-            }
-            let diaLine = LineChartDataSet(entries: bpDiastolic, label: "Diastolic")
-            diaLine.colors = [NSUIColor.red]
-            diaLine.lineWidth = 3
-            diaLine.highlightColor = .red
-            diaLine.circleColors = [NSUIColor.red]
+    
+    var bpArray = [BPData]()
+    
+    var bpDelegate: BPDataDelegate?
+    
+    func getAllData() {
+        let myURL = fileUrl
+        print(myURL)
+        bpArray.removeAll()
+        let database = FMDatabase(url: fileUrl)
+        if database.open() {
             
-            bpData.addDataSet(diaLine)
+            do {
+                let rs = try database.executeQuery("select * from BPTable order by date, time", values: nil)
+                while rs.next() {
+                    let items : BPData = BPData()
+                    items.id = rs.string(forColumn: "id")
+                    items.systolic = rs.string(forColumn: "systolic")
+                    items.diastolic = rs.string(forColumn: "diastolic")
+                    items.date = rs.string(forColumn: "date")
+                    items.time = rs.string(forColumn: "time")
+                    
+                    bpArray.append(items)
+                    syst.append(Double(items.systolic!)!)
+                    dias.append(Double(items.diastolic!)!)
+                    print(syst)
+                    print(dias)
+                }
+                bpps.delegate = self
+                bpps.dataSource = self
+                bpps.reloadData()
+            }
+            catch {
+                print("error:\(error.localizedDescription)")
+            }
+        }
+        else {
+            print("Unable to open database")
+            return
+        }
+        database.close()
+    }
+    
+    
+    
+    
+    var db: OpaquePointer?
+        
+    @IBOutlet weak var BPChartView: LineChartView!
+    @IBOutlet weak var bpps: UITableView!
+        
+        
+
+        var syst: [Double] = []
+        var dias: [Double] = []
+        var bpX = [BPData]()
+        let cellSpacingHeight: CGFloat = 5
+        
+        override func viewDidLoad() {
+
+            super.viewDidLoad()
+            
+            getAllData()
+            //self.tableRead()
+            self.updateGraph()
+
+            
         }
         
-        // Displays data and customizes the graph
-        self.BPChartView.data = bpData
-        self.BPChartView.rightAxis.enabled = false
-        self.BPChartView.xAxis.drawGridLinesEnabled = false
-        self.BPChartView.leftAxis.drawGridLinesEnabled = false
-        self.BPChartView.rightAxis.drawGridLinesEnabled = false
-        self.BPChartView.xAxis.labelPosition = .bottom
-        
- }
+        let sectionColors: [UIColor] = [.systemPink]
 
+    
+        override func didReceiveMemoryWarning() {
+            super.didReceiveMemoryWarning()
+        }
+        
+        
+        
+
+        func updateGraph() {
+            let bpData = LineChartData()
+            var bpSystolic = [ChartDataEntry]()
+            
+            
+            for i in 0..<syst.count {
+                bpSystolic.append(ChartDataEntry(x: Double(i), y: Double(syst[i])))
+        }
+            
+            let sysLine = LineChartDataSet(entries: bpSystolic, label: "Systolic")
+            sysLine.colors = [NSUIColor.init(red: 255.0/255.0, green: 192.0/255.0, blue: 203.0/255.0, alpha: 1.0)]
+            sysLine.lineWidth = 3
+            sysLine.highlightColor = .red
+            sysLine.circleColors = [NSUIColor.init(red: 255.0/255.0, green: 192.0/255.0, blue: 203.0/255.0, alpha: 1.0)]
+            
+            bpData.addDataSet(sysLine)
+            
+            if (dias.count > 0) {
+                var bpDiastolic = [ChartDataEntry]()
+                for i in 0..<dias.count {
+                    bpDiastolic.append(ChartDataEntry(x: Double(i), y: Double(dias[i]) ))
+                }
+                let diaLine = LineChartDataSet(entries: bpDiastolic, label: "Diastolic")
+                diaLine.colors = [NSUIColor.red]
+                diaLine.lineWidth = 3
+                diaLine.highlightColor = .red
+                diaLine.circleColors = [NSUIColor.red]
+                
+                bpData.addDataSet(diaLine)
+            }
+            
+            // Displays data and customizes the graph
+            self.BPChartView.data = bpData
+            self.BPChartView.rightAxis.enabled = false
+            self.BPChartView.xAxis.drawGridLinesEnabled = false
+            self.BPChartView.leftAxis.drawGridLinesEnabled = false
+            self.BPChartView.rightAxis.drawGridLinesEnabled = false
+            self.BPChartView.xAxis.labelPosition = .bottom
+     }
+    }
+    // Will need invalidate() and notifyDataSetChanged() to notify the graphs
+    // that data has been added/deleted and needs to be refreshed
+extension BPChartsViewController : UITableViewDelegate, UITableViewDataSource {
+
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return bpArray.count
+    }
+    // Set the spacing between sections
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return cellSpacingHeight
+    }
+    
+    // Make the background color show through
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        let headerView = UIView()
+        headerView.backgroundColor = UIColor.clear
+        return headerView
+    }
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell{
+           
+              let cell = bpps.dequeueReusableCell(withIdentifier: "BPCell", for: indexPath) as! BPCell
+
+              cell.layer.borderColor = UIColor.red.cgColor
+              cell.layer.borderWidth = 2
+              //cell.layer.cornerRadius = 10
+              cell.clipsToBounds = false
+              let obj = bpArray[indexPath.row]
+               cell.configureBP(dict: obj)
+               return cell
+    }
+    
+    @available(iOS 11.0, *)
+    func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let databp = self.bpArray[indexPath.row]
+        let cellID = databp.id
+        let delete = UIContextualAction(style: .destructive, title: "Delete") { (action, scrollview, completionHandler) in
+            let database = FMDatabase(url: fileUrl)
+            guard database.open() else {
+                print("Not fetch database")
+                return
+            }
+            do {
+                _ =  database.executeUpdate("delete from BPTable where id =? ", withArgumentsIn: [cellID!])
+            }
+            catch let err {
+                print(err.localizedDescription)
+            }
+            database.close()
+            
+            self.syst.removeAll()
+            self.dias.removeAll()
+            self.getBPData()
+            self.updateGraph()
+            
+            completionHandler(true)
+        }
+        delete.backgroundColor = UIColor.red
+        let swipeConfigure = UISwipeActionsConfiguration(actions: [delete])
+        swipeConfigure.performsFirstActionWithFullSwipe = false
+        return swipeConfigure
+    }
 }
-// Will need invalidate() and notifyDataSetChanged() to notify the graphs
-// that data has been added/deleted and needs to be refreshed
+
+class BPCell: UITableViewCell {
+
+    @IBOutlet weak var lblSys: UILabel!
+    @IBOutlet weak var lblDia: UILabel!
+    @IBOutlet weak var lblDate: UILabel!
+    @IBOutlet weak var lblTime: UILabel!
+    func configureBP(dict: BPData) {
+        lblSys.text = dict.systolic
+        lblDia.text = dict.diastolic
+        lblDate.text = dict.date
+        lblTime.text = dict.time
+    }
+}

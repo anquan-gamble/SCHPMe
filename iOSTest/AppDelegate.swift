@@ -8,6 +8,7 @@
 
 import UIKit
 import Firebase
+import FMDB 
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -17,8 +18,77 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         Thread.sleep(forTimeInterval: 2.0)
         // Override point for customization after application launch.
         FirebaseApp.configure()
+        
+        dbMethod()
         return true
     }
+    
+    func dbMethod() {
+        let database = FMDatabase(url: fileUrl)
+        guard database.open() else {
+            return
+        }
+        // Creates the Blood Pressure Table
+        do {
+            try database.executeUpdate("CREATE TABLE IF NOT EXISTS BPTable (id INTEGER PRIMARY KEY AUTOINCREMENT, systolic TEXT, diastolic TEXT, date TEXT, time TEXT);", values: nil)
+        }
+        catch {
+            print("\(error.localizedDescription)")
+        }
+        // Creates Blood Sugar Table
+        do {
+            try database.executeUpdate("CREATE TABLE IF NOT EXISTS BloodSTable11 (id INTEGER PRIMARY KEY AUTOINCREMENT, bloodSugarLevel TEXT, fast TEXT, date TEXT, time TEXT);", values: nil)
+        }
+        catch {
+            print("\(error.localizedDescription)")
+        }
+        
+        // Creates the Cholesterol Table
+        do {
+            try database.executeUpdate("CREATE TABLE IF NOT EXISTS CTable (id INTEGER PRIMARY KEY AUTOINCREMENT, TC TEXT, HDL TEXT, TRIG TEXT, LDL TEXT, date TEXT, time TEXT);", values: nil)
+        }
+        catch {
+            print("\(error.localizedDescription)")
+        }
+        // Needs Editing
+        // Creates the Vaccination Table
+        do {
+            try database.executeUpdate("CREATE TABLE IF NOT EXISTS VaccTable (id INTEGER PRIMARY KEY AUTOINCREMENT, vaccination TEXT, status TEXT, date TEXT);", values: nil)
+        }
+        catch {
+            print("\(error.localizedDescription)")
+        }
+        // Creates the Body Weight Table
+        do {
+            try database.executeUpdate("CREATE TABLE IF NOT EXISTS BWTable (id INTEGER PRIMARY KEY AUTOINCREMENT, weight TEXT, date TEXT, time TEXT);", values: nil)
+        }
+        catch {
+            print("\(error.localizedDescription)")
+        }
+        // Creates the Allergies Table
+        do {
+            try database.executeUpdate("CREATE TABLE IF NOT EXISTS ATable (id INTEGER PRIMARY KEY AUTOINCREMENT, allergyName TEXT, allergyReaction TEXT);", values: nil)
+        }
+        catch {
+            print("\(error.localizedDescription)")
+        }
+        // Creates the Medications Table
+        do {
+            try database.executeUpdate("CREATE TABLE IF NOT EXISTS MedTable (id INTEGER PRIMARY KEY AUTOINCREMENT, medName TEXT, medDosage TEXT, dosageFrequency TEXT, medDelivery TEXT, takingStatus TEXT, rxNumber TEXT, pharmName TEXT, pharmNumber TEXT);", values: nil)
+        }
+        catch {
+            print("\(error.localizedDescription)")
+        }
+        // Creates the User Profile Table
+        do {
+            try database.executeUpdate("CREATE TABLE IF NOT EXISTS UPTable (id INTEGER PRIMARY KEY, firstName TEXT, lastName TEXT, gender TEXT, date TEXT);", values: nil)
+        }
+        catch {
+            print("\(error.localizedDescription)")
+        }
+        database.close()
+    }
+    
 
     // MARK: UISceneSession Lifecycle
 

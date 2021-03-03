@@ -7,16 +7,13 @@
 //
 
 import UIKit
+import SQLite3
+import Toast_Swift
+import FMDB
 
 class CholesterolEntry: UIViewController {
 
 
-    @IBOutlet weak var lbl1: UILabel!
-    @IBOutlet weak var lbl2: UILabel!
-    @IBOutlet weak var lbl3: UILabel!
-    @IBOutlet weak var lbl4: UILabel!
-    @IBOutlet weak var lbl5: UILabel!
-    @IBOutlet weak var lbl6: UILabel!
     @IBOutlet weak var txtTC: UITextField!
     @IBOutlet weak var txtHDL: UITextField!
     @IBOutlet weak var txtTRIG: UITextField!
@@ -31,13 +28,66 @@ class CholesterolEntry: UIViewController {
     @IBOutlet weak var txtTimeBox:      UITextField!
                    var dateString:      String!
                    var timeString:      String!
+    var chDelegate: CHDataDelegate?
     
-    @IBOutlet weak var scrollView:      UIScrollView!
+
     
+    @IBAction func enter(_ sender: UIButton) {
+        insertDB()
+    }
+    
+    func insertDB() {
+        
+        let tc = txtTC.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let hdl = txtHDL.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trig = txtTRIG.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let ldl = txtLDL.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let date = txtDateBox.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let time = txtTimeBox.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        
+        let database  = FMDatabase(url: fileUrl)
+        
+        guard database.open() else {
+            print("Unable to open database")
+            return
+        }
+        let qstate = "INSERT INTO CTable (TC, HDL, TRIG, LDL, date, time) values (?,?,?,?,?,?);"
+        if (tc?.isEmpty)! || (hdl?.isEmpty)! || (trig?.isEmpty)! || (ldl?.isEmpty)! || (date?.isEmpty)! || (time?.isEmpty)! {
+            self.view.makeToast("Please Complete All Fields", duration: 2, position: .center, title: nil, image: UIImage(named: "ic_warning.png"))
+            return;
+        }
+            do {
+                try database.executeUpdate(qstate, values: [tc!, hdl!, trig!, ldl!, date!, time!])
+                print("idk")
+                
+                self.view.makeToast("Cholesterol Entered", duration: 2, position: .center, title: nil, image: UIImage(named: "ic_checkmark.png"))
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                  self.dismiss(animated: true,completion: nil)
+                }
+               
+        }
+            catch {
+                print("\(error.localizedDescription)")
+            }
+        
+        database.close()
+      //  chDelegate?.getCHData()
+        self.navigationController?.popViewController(animated: true)
+    }
+    
+    @IBAction func Clear(_ sender: UIButton) {
+        txtTC.text = nil
+        txtHDL.text = nil
+        txtTRIG.text = nil
+        txtLDL.text = nil
+        txtTimeBox.text = nil
+        txtDateBox.text = nil
+    }
     
     override func viewDidLayoutSubviews() {
        super.viewDidLayoutSubviews()
-       scrollView.contentSize = CGSize(width: 330, height: 710)
+
         
     }
     
@@ -47,7 +97,7 @@ class CholesterolEntry: UIViewController {
     
     @IBAction func gohome(_ sender: Any) {
         
-        performSegue(withIdentifier: "goHomeBpEntry", sender: self)
+        performSegue(withIdentifier: "goHomeChEntry", sender: self)
     }
     
     
@@ -120,6 +170,7 @@ class CholesterolEntry: UIViewController {
     @IBAction func timeActivate(_ sender: Any) {
         viewTime.isHidden = false
         viewTime.isExclusiveTouch = true
+        txtTimeBox.endEditing(true)
     }
     
     @IBAction func timePicked(_ sender: Any) {
@@ -130,6 +181,7 @@ class CholesterolEntry: UIViewController {
         txtTimeBox.text = timeString
         txtTimeBox.isEnabled = false
         txtTimeBox.isEnabled = true
+ 
     }
     
     @IBAction func timeCancel(_ sender: Any) {
@@ -138,9 +190,22 @@ class CholesterolEntry: UIViewController {
         txtTimeBox.isEnabled = true
     }
     
+    func toolBar() {
+        let toolBar = UIToolbar()
+               toolBar.sizeToFit()
+        let flexibleSpace = UIBarButtonItem(barButtonSystemItem: UIBarButtonItem.SystemItem.flexibleSpace, target: nil, action: nil)
+        let doneButton = UIBarButtonItem(barButtonSystemItem: UIBarButtonItem.SystemItem.done, target: self, action: #selector(self.doneClicked))
+        toolBar.setItems([flexibleSpace, doneButton], animated: false)
+        txtTC.inputAccessoryView = toolBar
+        txtHDL.inputAccessoryView = toolBar
+        txtTRIG.inputAccessoryView = toolBar
+        txtLDL.inputAccessoryView = toolBar
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
+        self.toolBar()
         var bottomLine = CALayer()
         bottomLine.frame = CGRect(origin: CGPoint(x: 0, y:txtTC.frame.height), size: CGSize(width: txtTC.frame.width, height:  1))
         bottomLine.backgroundColor = UIColor(red: 28/255.0, green: 103/255.0, blue: 106/255.0, alpha: 1.0).cgColor
@@ -189,38 +254,9 @@ class CholesterolEntry: UIViewController {
         
         layer2 = CALayer()
         layer2.backgroundColor = UIColor(red: 28/255.0, green: 103/255.0, blue: 106/255.0, alpha: 1.0).cgColor
-        
-        
-        lbl1.sizeToFit()
-        lbl1.center.x = lbl5.center.x
-        txtTC.center.x = lbl5.center.x
-        txtTC.center.y = lbl1.center.y + 40
-        lbl2.sizeToFit()
-        lbl2.center.x = lbl5.center.x
-        lbl2.center.y = txtTC.center.y + 80
-        txtHDL.center.x = lbl5.center.x
-        txtHDL.center.y = lbl2.center.y + 40
-        lbl3.sizeToFit()
-        lbl3.center.x = lbl5.center.x
-        lbl3.center.y = txtHDL.center.y + 80
-        txtTRIG.center.x = lbl5.center.x
-        txtTRIG.center.y = lbl3.center.y + 40
-        lbl4.sizeToFit()
-        lbl4.center.x = lbl5.center.x
-        lbl4.center.y = txtTRIG.center.y + 80
-        txtLDL.center.x = lbl5.center.x
-        txtLDL.center.y = lbl4.center.y + 40
-        lbl5.center.y = txtLDL.center.y + 80
-        txtTimeBox.center.x = lbl5.center.x
-        txtTimeBox.center.y = lbl5.center.y + 40
-        lbl6.sizeToFit()
-        lbl6.center.x = lbl5.center.x
-        lbl6.center.y = txtTimeBox.center.y + 80
-        txtDateBox.center.x = lbl5.center.x
-        txtDateBox.center.y = lbl6.center.y + 40
-        
     }
-   
-    
+     @objc func doneClicked() {
+       view.endEditing(true)
+   }
 }
 
